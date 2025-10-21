@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Tabbed Charts</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #e0e0e0; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .analytics-section { 
+            background: #1a1a1a; 
+            border: 1px solid #444; 
+            padding: 20px; 
+            border-radius: 5px; 
+            margin: 20px 0; 
+        }
+        .analytics-section h2 { 
+            color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 10px; 
+            margin-top: 0; 
+        }
+        .tab-container {
+            margin: 20px 0;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            background: #2a2a2a;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 10px 20px;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .tab-button:hover {
+            background: #3a3a3a;
+        }
+        .tab-button.active {
+            background: #4a4a4a;
+            border-bottom: 1px solid #4a4a4a;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .chart-container { 
+            background: #2a2a2a; 
+            border: 1px solid #555; 
+            border-radius: 5px; 
+            padding: 15px; 
+            min-height: 400px; 
+        }
+        .chart-container h3 { 
+            color: #fff; 
+            margin-top: 0; 
+            margin-bottom: 15px; 
+            font-size: 1.1em; 
+            text-align: center; 
+        }
+        .loading { 
+            color: #888; 
+            text-align: center; 
+            padding: 20px; 
+            min-height: 200px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Tabbed Charts - One Chart at a Time</h1>
+        
+        <div class="analytics-section">
+            <h2>Visual Analytics</h2>
+            
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="showTab('portfolio')">Portfolio</button>
+                    <button class="tab-button" onclick="showTab('price')">Price</button>
+                    <button class="tab-button" onclick="showTab('market-cap')">Market Cap</button>
+                    <button class="tab-button" onclick="showTab('volume')">Volume</button>
+                    <button class="tab-button" onclick="showTab('supply')">Supply</button>
+                </div>
+                
+                <div id="portfolio-tab" class="tab-content active">
+                    <div class="chart-container">
+                        <h3>Portfolio Composition</h3>
+                        <div id="pie-chart" class="loading">Loading portfolio composition...</div>
+                    </div>
+                </div>
+                
+                <div id="price-tab" class="tab-content">
+                    <div class="chart-container">
+                        <h3>Price Trend</h3>
+                        <div id="price-chart" class="loading">Loading price data...</div>
+                    </div>
+                </div>
+                
+                <div id="market-cap-tab" class="tab-content">
+                    <div class="chart-container">
+                        <h3>Market Cap Trend</h3>
+                        <div id="market-cap-chart" class="loading">Loading market cap data...</div>
+                    </div>
+                </div>
+                
+                <div id="volume-tab" class="tab-content">
+                    <div class="chart-container">
+                        <h3>24h Volume Trend</h3>
+                        <div id="volume-chart" class="loading">Loading volume data...</div>
+                    </div>
+                </div>
+                
+                <div id="supply-tab" class="tab-content">
+                    <div class="chart-container">
+                        <h3>Circulating Supply Trend</h3>
+                        <div id="supply-chart" class="loading">Loading supply data...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script>
+        let chartsLoaded = {
+            portfolio: false,
+            price: false,
+            marketCap: false,
+            volume: false,
+            supply: false
+        };
+        
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load chart if not already loaded
+            if (!chartsLoaded[tabName]) {
+                loadChart(tabName);
+            }
+        }
+        
+        setTimeout(function() {
+            console.log('Starting tabbed charts...');
+            
+            if (typeof Plotly !== 'undefined') {
+                // Load the first tab by default
+                loadChart('portfolio');
+            } else {
+                console.error('Plotly not available');
+                document.getElementById('pie-chart').innerHTML = 'Plotly library not loaded';
+            }
+        }, 1000);
+        
+        async function loadChart(chartType) {
+            console.log('Loading chart:', chartType);
+            
+            if (chartType === 'portfolio') {
+                await loadPortfolioComposition();
+            } else {
+                await loadTimeSeriesChart(chartType);
+            }
+            
+            chartsLoaded[chartType] = true;
+        }
+        
+        async function loadPortfolioComposition() {
+            try {
+                const pieChartElement = document.getElementById('pie-chart');
+                if (!pieChartElement) return;
+                
+                const response = await fetch('/api/portfolio-composition');
+                const data = await response.json();
+                
+                if (data.composition && data.composition.length > 0) {
+                    pieChartElement.innerHTML = '';
+                    
+                    const labels = data.composition.map(item => item.symbol);
+                    const values = data.composition.map(item => item.value);
+                    const text = data.composition.map(item => 
+                        `${item.symbol}<br>${item.percentage.toFixed(1)}%<br>$${item.value.toLocaleString()}`
+                    );
+                    
+                    const plotData = [{
+                        labels: labels,
+                        values: values,
+                        text: text,
+                        textinfo: 'text',
+                        hovertemplate: '<b>%{label}</b><br>Value: $%{value:,.0f}<br>Percentage: %{percent}<extra></extra>',
+                        type: 'pie',
+                        marker: {
+                            colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'],
+                            line: { color: '#fff', width: 2 }
+                        }
+                    }];
+                    
+                    const layout = {
+                        title: {
+                            text: 'Portfolio Composition by Asset',
+                            font: { color: '#fff', size: 18 }
+                        },
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        font: { color: '#e0e0e0', size: 12 },
+                        showlegend: true,
+                        legend: {
+                            font: { color: '#e0e0e0', size: 12 },
+                            orientation: 'h',
+                            x: 0.5,
+                            y: -0.1,
+                            xanchor: 'center'
+                        },
+                        margin: { l: 50, r: 50, t: 50, b: 80 },
+                        height: 350
+                    };
+                    
+                    Plotly.newPlot('pie-chart', plotData, layout, {responsive: true, displayModeBar: false});
+                    console.log('Portfolio chart rendered successfully');
+                } else {
+                    document.getElementById('pie-chart').innerHTML = 'No portfolio data available';
+                }
+            } catch (error) {
+                console.error('Error loading portfolio composition:', error);
+                document.getElementById('pie-chart').innerHTML = 'Error loading portfolio data';
+            }
+        }
+        
+        async function loadTimeSeriesChart(chartType) {
+            try {
+                const chartId = chartType === 'marketCap' ? 'market-cap-chart' : chartType + '-chart';
+                const chartElement = document.getElementById(chartId);
+                if (!chartElement) return;
+                
+                const response = await fetch('/api/time-series');
+                const data = await response.json();
+                
+                if (data.timestamps && data.timestamps.length > 0) {
+                    chartElement.innerHTML = '';
+                    
+                    let yData, title, color, tickFormat;
+                    
+                    switch(chartType) {
+                        case 'price':
+                            yData = data.price;
+                            title = 'Price (USD)';
+                            color = '#4ECDC4';
+                            tickFormat = '$.4f';
+                            break;
+                        case 'marketCap':
+                            yData = data.market_cap;
+                            title = 'Market Cap (USD)';
+                            color = '#45B7D1';
+                            tickFormat = '$,.0f';
+                            break;
+                        case 'volume':
+                            yData = data.volume_24h;
+                            title = '24h Volume (USD)';
+                            color = '#FF6B6B';
+                            tickFormat = '$,.0f';
+                            break;
+                        case 'supply':
+                            yData = data.circulating_supply;
+                            title = 'Circulating Supply';
+                            color = '#96CEB4';
+                            tickFormat = ',.0f';
+                            break;
+                    }
+                    
+                    const plotData = [{
+                        x: data.timestamps,
+                        y: yData,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: color, width: 2 },
+                        marker: { size: 4, color: color }
+                    }];
+                    
+                    const layout = {
+                        title: { text: title, font: { color: '#fff', size: 16 } },
+                        xaxis: { 
+                            color: '#e0e0e0', 
+                            gridcolor: '#444',
+                            showgrid: true,
+                            zeroline: false,
+                            tickformat: '%m/%d %H:%M'
+                        },
+                        yaxis: { 
+                            color: '#e0e0e0', 
+                            gridcolor: '#444',
+                            showgrid: true,
+                            zeroline: false,
+                            tickformat: tickFormat
+                        },
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        font: { color: '#e0e0e0', size: 12 },
+                        margin: { l: 50, r: 50, t: 50, b: 50 },
+                        showlegend: false
+                    };
+                    
+                    Plotly.newPlot(chartId, plotData, layout, {responsive: true, displayModeBar: false});
+                    console.log(chartType + ' chart rendered successfully');
+                } else {
+                    chartElement.innerHTML = 'No time series data available';
+                }
+            } catch (error) {
+                console.error('Error loading time series data:', error);
+                document.getElementById(chartType + '-chart').innerHTML = 'Error loading chart data';
+            }
+        }
+    </script>
+</body>
+</html>

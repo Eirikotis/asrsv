@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+    <title>ASSET Reserve History</title>
+</head>
+<body>
+    <h1>ASSET Reserve History</h1>
+    
+    <h2>Daily Summaries</h2>
+    <table border="1">
+        <tr>
+            <th>Day</th>
+            <th>Volume Sum</th>
+            <th>Fees Placeholder</th>
+            <th>Real Yield Avg</th>
+            <th>APY Simple Avg</th>
+        </tr>
+        {% for row in daily %}
+        <tr>
+            <td>{{ row.day }}</td>
+            <td>${{ "%.2f"|format(row.vol_sum) }}</td>
+            <td>${{ "%.2f"|format(row.fees_placeholder) }}</td>
+            <td>{{ "%.4f"|format(row.real_yield_avg) }}</td>
+            <td>{{ "%.2f"|format(row.apy_simple_avg) }}%</td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <h2>Pool APY History</h2>
+    <table border="1">
+        <tr>
+            <th>Day</th>
+            <th>APY Avg</th>
+        </tr>
+        {% for row in pool_apy %}
+        <tr>
+            <td>{{ row.day }}</td>
+            <td>{{ "%.2f"|format(row.apy_avg) }}%</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

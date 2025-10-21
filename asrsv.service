@@ -1,0 +1,16 @@
+[Unit]
+Description=Asset Reserve Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/asrsv
+Environment=PATH=/opt/asrsv/venv/bin
+Environment=PYTHONPATH=/opt/asrsv
+ExecStart=/opt/asrsv/venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

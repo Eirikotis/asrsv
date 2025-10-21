@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Simple Charts</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #e0e0e0; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .analytics-section { 
+            background: #1a1a1a; 
+            border: 1px solid #444; 
+            padding: 20px; 
+            border-radius: 5px; 
+            margin: 20px 0; 
+        }
+        .analytics-section h2 { 
+            color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 10px; 
+            margin-top: 0; 
+        }
+        .charts-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+            margin: 20px 0; 
+        }
+        .chart-container { 
+            background: #2a2a2a; 
+            border: 1px solid #555; 
+            border-radius: 5px; 
+            padding: 15px; 
+            min-height: 300px; 
+        }
+        .chart-container h3 { 
+            color: #fff; 
+            margin-top: 0; 
+            margin-bottom: 15px; 
+            font-size: 1.1em; 
+            text-align: center; 
+        }
+        .pie-chart-container { 
+            grid-column: 1 / -1; 
+            min-height: 400px; 
+        }
+        .loading { 
+            color: #888; 
+            text-align: center; 
+            padding: 20px; 
+            min-height: 200px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Simple Charts - No API Calls</h1>
+        
+        <div class="analytics-section">
+            <h2>Visual Analytics</h2>
+            
+            <div class="chart-container pie-chart-container">
+                <h3>Portfolio Composition</h3>
+                <div id="pie-chart" class="loading">Loading portfolio composition...</div>
+            </div>
+            
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Price Trend</h3>
+                    <div id="price-chart" class="loading">Loading price data...</div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>Market Cap Trend</h3>
+                    <div id="market-cap-chart" class="loading">Loading market cap data...</div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>24h Volume Trend</h3>
+                    <div id="volume-chart" class="loading">Loading volume data...</div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>Circulating Supply Trend</h3>
+                    <div id="supply-chart" class="loading">Loading supply data...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script>
+        setTimeout(function() {
+            console.log('Starting simple test...');
+            
+            if (typeof Plotly !== 'undefined') {
+                loadSimpleCharts();
+            } else {
+                console.error('Plotly not available');
+                document.getElementById('pie-chart').innerHTML = 'Plotly library not loaded';
+            }
+        }, 1000);
+        
+        function loadSimpleCharts() {
+            // Simple pie chart with hardcoded data
+            const pieChartElement = document.getElementById('pie-chart');
+            pieChartElement.innerHTML = '';
+            
+            const pieData = [{
+                labels: ['WTAO', 'DBR', 'USDBR', 'USDC', 'Fartcoin'],
+                values: [23.6, 21.0, 7.3, 4.6, 43.5],
+                type: 'pie',
+                marker: {
+                    colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
+                    line: { color: '#fff', width: 2 }
+                }
+            }];
+            
+            const pieLayout = {
+                title: {
+                    text: 'Portfolio Composition by Asset',
+                    font: { color: '#fff', size: 18 }
+                },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#e0e0e0', size: 12 },
+                showlegend: true,
+                legend: {
+                    font: { color: '#e0e0e0', size: 12 },
+                    orientation: 'h',
+                    x: 0.5,
+                    y: -0.1,
+                    xanchor: 'center'
+                },
+                margin: { l: 50, r: 50, t: 50, b: 80 },
+                height: 350
+            };
+            
+            console.log('Rendering simple pie chart...');
+            Plotly.newPlot('pie-chart', pieData, pieLayout, {responsive: true, displayModeBar: false});
+            
+            // Simple time series charts with hardcoded data
+            const timeData = {
+                x: [1, 2, 3, 4, 5],
+                y: [1, 4, 2, 3, 5]
+            };
+            
+            const timeLayout = {
+                title: { text: 'Test Chart', font: { color: '#fff', size: 16 } },
+                xaxis: { color: '#e0e0e0', gridcolor: '#444' },
+                yaxis: { color: '#e0e0e0', gridcolor: '#444' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#e0e0e0', size: 12 },
+                margin: { l: 50, r: 50, t: 50, b: 50 },
+                showlegend: false
+            };
+            
+            // Clear loading text and render all charts
+            document.getElementById('price-chart').innerHTML = '';
+            document.getElementById('market-cap-chart').innerHTML = '';
+            document.getElementById('volume-chart').innerHTML = '';
+            document.getElementById('supply-chart').innerHTML = '';
+            
+            const chartData = [{
+                x: timeData.x,
+                y: timeData.y,
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#4ECDC4', width: 2 },
+                marker: { size: 4, color: '#4ECDC4' }
+            }];
+            
+            console.log('Rendering simple time series charts...');
+            Plotly.newPlot('price-chart', chartData, timeLayout, {responsive: true, displayModeBar: false});
+            Plotly.newPlot('market-cap-chart', chartData, timeLayout, {responsive: true, displayModeBar: false});
+            Plotly.newPlot('volume-chart', chartData, timeLayout, {responsive: true, displayModeBar: false});
+            Plotly.newPlot('supply-chart', chartData, timeLayout, {responsive: true, displayModeBar: false});
+            
+            console.log('All simple charts rendered');
+        }
+    </script>
+</body>
+</html>

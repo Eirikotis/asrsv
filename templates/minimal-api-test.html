@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal API Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #e0e0e0; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .chart-container { 
+            background: #2a2a2a; 
+            border: 1px solid #555; 
+            border-radius: 5px; 
+            padding: 15px; 
+            min-height: 300px; 
+            margin: 20px 0;
+        }
+        .chart-container h3 { 
+            color: #fff; 
+            margin-top: 0; 
+            margin-bottom: 15px; 
+            font-size: 1.1em; 
+            text-align: center; 
+        }
+        #test-chart { 
+            background: #333; 
+            border: 1px solid yellow; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minimal API Test</h1>
+        
+        <div class="chart-container">
+            <h3>Portfolio Chart (Real API Data)</h3>
+            <div id="test-chart" style="width: 100%; height: 250px;">
+                <div style="text-align: center; padding: 50px; color: #888;">
+                    Loading real portfolio data...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script>
+        setTimeout(function() {
+            console.log('Starting minimal API test...');
+            
+            // Load real portfolio data
+            fetch('/api/portfolio-composition')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Portfolio data received:', data);
+                    
+                    if (data.composition && data.composition.length > 0) {
+                        // Clear loading text
+                        document.getElementById('test-chart').innerHTML = '';
+                        
+                        const labels = data.composition.map(item => item.symbol);
+                        const values = data.composition.map(item => item.value);
+                        const text = data.composition.map(item => 
+                            `${item.symbol}<br>${item.percentage.toFixed(1)}%<br>$${item.value.toLocaleString()}`
+                        );
+                        
+                        const plotData = [{
+                            labels: labels,
+                            values: values,
+                            text: text,
+                            textinfo: 'text',
+                            hovertemplate: '<b>%{label}</b><br>Value: $%{value:,.0f}<br>Percentage: %{percent}<extra></extra>',
+                            type: 'pie',
+                            marker: {
+                                colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'],
+                                line: { color: '#fff', width: 2 }
+                            }
+                        }];
+                        
+                        const layout = {
+                            title: {
+                                text: 'Portfolio Composition by Asset',
+                                font: { color: '#fff', size: 18 }
+                            },
+                            paper_bgcolor: 'rgba(0,0,0,0)',
+                            plot_bgcolor: 'rgba(0,0,0,0)',
+                            font: { color: '#e0e0e0', size: 12 },
+                            showlegend: true,
+                            legend: {
+                                font: { color: '#e0e0e0', size: 12 },
+                                orientation: 'h',
+                                x: 0.5,
+                                y: -0.1,
+                                xanchor: 'center'
+                            },
+                            margin: { l: 50, r: 50, t: 50, b: 80 },
+                            height: 350
+                        };
+                        
+                        console.log('Rendering portfolio chart with real data...');
+                        Plotly.newPlot('test-chart', plotData, layout, {responsive: true, displayModeBar: false});
+                        console.log('Portfolio chart rendered successfully');
+                    } else {
+                        document.getElementById('test-chart').innerHTML = 'No portfolio data available';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading portfolio data:', error);
+                    document.getElementById('test-chart').innerHTML = 'Error loading portfolio data';
+                });
+            
+        }, 1000);
+    </script>
+</body>
+</html>

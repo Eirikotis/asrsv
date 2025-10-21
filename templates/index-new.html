@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ASSET Reserve Dashboard</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #e0e0e0; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .timestamp { 
+            color: #888; 
+            font-size: 0.9em; 
+        }
+        .metrics-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+            margin: 20px 0; 
+        }
+        .metric-section { 
+            background: #1a1a1a; 
+            border: 1px solid #444; 
+            padding: 15px; 
+            border-radius: 5px; 
+        }
+        .metric-section h3 { 
+            margin-top: 0; 
+            color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 8px; 
+        }
+        .metric-item { 
+            margin: 8px 0; 
+            color: #e0e0e0; 
+        }
+        .chart-container { 
+            background: #2a2a2a; 
+            border: 1px solid #555; 
+            border-radius: 5px; 
+            padding: 15px; 
+            min-height: 300px; 
+            margin: 20px 0;
+        }
+        .chart-container h3 { 
+            color: #fff; 
+            margin-top: 0; 
+            margin-bottom: 15px; 
+            font-size: 1.1em; 
+            text-align: center; 
+        }
+        .loading { 
+            color: #888; 
+            text-align: center; 
+            padding: 20px; 
+            min-height: 200px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .chart-selector {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .chart-selector select {
+            background: #2a2a2a;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #333;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    {% if no_data %}
+        <h1>No data yet. Run snapshot.</h1>
+    {% else %}
+        <div class="container">
+            <h1>ASSET Reserve Dashboard</h1>
+            <p class="timestamp">Latest Snapshot: {{ summary.ts_utc }}</p>
+            
+            <div class="metrics-grid">
+                <div class="metric-section">
+                    <h3>Asset Metrics</h3>
+                    <div class="metric-item">Price USD: ${{ "{:,.4f}".format(summary.price_usd or 0) }}</div>
+                    <div class="metric-item">FDV USD: ${{ "{:,.2f}".format(summary.fdv_usd or 0) }}</div>
+                    <div class="metric-item">Market Cap USD: ${{ "{:,.2f}".format(summary.market_cap_usd or 0) }}</div>
+                    <div class="metric-item">Circulating Supply: {{ "{:,.2f}".format(summary.circulating_supply or 0) }}</div>
+                    <div class="metric-item">Real TVL Total USD: ${{ "{:,.2f}".format(summary.real_tvl_total_usd or 0) }}</div>
+                    <div class="metric-item">Volume 24h USD: ${{ "{:,.2f}".format(summary.volume_24h_usd or 0) }}</div>
+                </div>
+                
+                <div class="metric-section">
+                    <h3>Yield Metrics</h3>
+                    <div class="metric-item">24h Fees: ${{ "{:,.2f}".format(total_fees_24h or 0) }}</div>
+                    <div class="metric-item">Daily Yield: {{ "{:.3f}".format(daily_yield * 100) }}%</div>
+                    <div class="metric-item">APY Simple: {{ "{:.2f}".format(apy_simple * 100) }}%</div>
+                    <div class="metric-item">APY Compound: {{ "{:.2f}".format(apy_compound * 100) }}%</div>
+                </div>
+            </div>
+            
+            <h2>Visual Analytics</h2>
+            
+            <div class="chart-selector">
+                <label for="chartType">Select Chart: </label>
+                <select id="chartType" onchange="loadSelectedChart()">
+                    <option value="portfolio">Portfolio Composition</option>
+                    <option value="price">Price Trend</option>
+                    <option value="market-cap">Market Cap Trend</option>
+                    <option value="volume">24h Volume Trend</option>
+                    <option value="supply">Circulating Supply Trend</option>
+                </select>
+            </div>
+            
+            <!-- EXACT same structure as working debug page -->
+            <div class="chart-container">
+                <h3 id="chartTitle">Portfolio Composition</h3>
+                <div id="main-chart" class="loading">Loading chart...</div>
+            </div>
+            
+            <h2>Pools</h2>
+            <table>
+                <tr>
+                    <th>Family</th>
+                    <th>Source</th>
+                    <th>Quote Symbol</th>
+                    <th>Real TVL USD</th>
+                    <th>Volume 24h USD</th>
+                    <th>Fee 24h USD</th>
+                    <th>Daily Yield</th>
+                    <th>APY Simple</th>
+                    <th>Quote Amount</th>
+                </tr>
+                {% for pool in pools %}
+                <tr>
+                    <td>{{ pool.family }}</td>
+                    <td>{{ pool.source }}</td>
+                    <td>{{ pool.quote_symbol }}</td>
+                    <td>${{ "{:,.2f}".format(pool.real_tvl_usd or 0) }}</td>
+                    <td>${{ "{:,.2f}".format(pool.volume_24h_usd or 0) }}</td>
+                    <td>${{ "{:,.2f}".format(pool.fee_24h_usd or 0) }}</td>
+                    <td>{{ "{:.3f}".format((pool.daily_yield or 0) * 100) }}%</td>
+                    <td>{{ "{:.2f}".format((pool.apy_simple or 0) * 100) }}%</td>
+                    <td>{{ "{:,.2f}".format(pool.quote_units or 0) }} {{ pool.quote_symbol }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+    
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script>
+        setTimeout(function() {
+            console.log('Starting main dashboard chart loading...');
+            
+            if (typeof Plotly !== 'undefined') {
+                // Load the first chart by default
+                loadSelectedChart();
+            } else {
+                console.error('Plotly not available');
+                document.getElementById('main-chart').innerHTML = 'Plotly library not loaded';
+            }
+        }, 1000);
+        
+        function loadSelectedChart() {
+            const chartType = document.getElementById('chartType').value;
+            const chartTitle = document.getElementById('chartTitle');
+            const chartElement = document.getElementById('main-chart');
+            
+            // Update title
+            const titles = {
+                'portfolio': 'Portfolio Composition',
+                'price': 'Price Trend',
+                'market-cap': 'Market Cap Trend',
+                'volume': '24h Volume Trend',
+                'supply': 'Circulating Supply Trend'
+            };
+            chartTitle.textContent = titles[chartType];
+            
+            // Clear previous chart
+            chartElement.innerHTML = '';
+            
+            if (chartType === 'portfolio') {
+                loadPortfolioChart();
+            } else {
+                loadTimeSeriesChart(chartType);
+            }
+        }
+        
+        async function loadPortfolioChart() {
+            try {
+                const response = await fetch('/api/portfolio-composition');
+                const data = await response.json();
+                
+                if (data.composition && data.composition.length > 0) {
+                    const labels = data.composition.map(item => item.symbol);
+                    const values = data.composition.map(item => item.value);
+                    const text = data.composition.map(item => 
+                        `${item.symbol}<br>${item.percentage.toFixed(1)}%<br>$${item.value.toLocaleString()}`
+                    );
+                    
+                    const plotData = [{
+                        labels: labels,
+                        values: values,
+                        text: text,
+                        textinfo: 'text',
+                        hovertemplate: '<b>%{label}</b><br>Value: $%{value:,.0f}<br>Percentage: %{percent}<extra></extra>',
+                        type: 'pie',
+                        marker: {
+                            colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'],
+                            line: { color: '#fff', width: 2 }
+                        }
+                    }];
+                    
+                    const layout = {
+                        title: {
+                            text: 'Portfolio Composition by Asset',
+                            font: { color: '#fff', size: 18 }
+                        },
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        font: { color: '#e0e0e0', size: 12 },
+                        showlegend: true,
+                        legend: {
+                            font: { color: '#e0e0e0', size: 12 },
+                            orientation: 'h',
+                            x: 0.5,
+                            y: -0.1,
+                            xanchor: 'center'
+                        },
+                        margin: { l: 50, r: 50, t: 50, b: 80 },
+                        height: 350
+                    };
+                    
+                    console.log('Rendering portfolio chart...');
+                    Plotly.newPlot('main-chart', plotData, layout, {responsive: true, displayModeBar: false});
+                    console.log('Portfolio chart rendered successfully');
+                } else {
+                    document.getElementById('main-chart').innerHTML = 'No portfolio data available';
+                }
+            } catch (error) {
+                console.error('Error loading portfolio composition:', error);
+                document.getElementById('main-chart').innerHTML = 'Error loading portfolio data';
+            }
+        }
+        
+        async function loadTimeSeriesChart(chartType) {
+            try {
+                const response = await fetch('/api/time-series');
+                const data = await response.json();
+                
+                if (data.timestamps && data.timestamps.length > 0) {
+                    let yData, title, color, tickFormat;
+                    
+                    switch(chartType) {
+                        case 'price':
+                            yData = data.price;
+                            title = 'Price (USD)';
+                            color = '#4ECDC4';
+                            tickFormat = '$.4f';
+                            break;
+                        case 'market-cap':
+                            yData = data.market_cap;
+                            title = 'Market Cap (USD)';
+                            color = '#45B7D1';
+                            tickFormat = '$,.0f';
+                            break;
+                        case 'volume':
+                            yData = data.volume_24h;
+                            title = '24h Volume (USD)';
+                            color = '#FF6B6B';
+                            tickFormat = '$,.0f';
+                            break;
+                        case 'supply':
+                            yData = data.circulating_supply;
+                            title = 'Circulating Supply';
+                            color = '#96CEB4';
+                            tickFormat = ',.0f';
+                            break;
+                    }
+                    
+                    const plotData = [{
+                        x: data.timestamps,
+                        y: yData,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: color, width: 2 },
+                        marker: { size: 4, color: color }
+                    }];
+                    
+                    const layout = {
+                        title: { text: title, font: { color: '#fff', size: 16 } },
+                        xaxis: { 
+                            color: '#e0e0e0', 
+                            gridcolor: '#444',
+                            showgrid: true,
+                            zeroline: false,
+                            tickformat: '%m/%d %H:%M'
+                        },
+                        yaxis: { 
+                            color: '#e0e0e0', 
+                            gridcolor: '#444',
+                            showgrid: true,
+                            zeroline: false,
+                            tickformat: tickFormat
+                        },
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        font: { color: '#e0e0e0', size: 12 },
+                        margin: { l: 50, r: 50, t: 50, b: 50 },
+                        showlegend: false
+                    };
+                    
+                    console.log('Rendering time series chart:', chartType);
+                    Plotly.newPlot('main-chart', plotData, layout, {responsive: true, displayModeBar: false});
+                    console.log(chartType + ' chart rendered successfully');
+                } else {
+                    document.getElementById('main-chart').innerHTML = 'No time series data available';
+                }
+            } catch (error) {
+                console.error('Error loading time series data:', error);
+                document.getElementById('main-chart').innerHTML = 'Error loading chart data';
+            }
+        }
+    </script>
+</body>
+</html>

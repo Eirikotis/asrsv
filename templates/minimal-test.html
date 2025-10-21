@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Chart Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #e0e0e0; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .chart-container { 
+            background: #2a2a2a; 
+            border: 1px solid #555; 
+            border-radius: 5px; 
+            padding: 15px; 
+            min-height: 300px; 
+            margin: 20px 0;
+        }
+        .chart-container h3 { 
+            color: #fff; 
+            margin-top: 0; 
+            margin-bottom: 15px; 
+            font-size: 1.1em; 
+            text-align: center; 
+        }
+        #test-chart { 
+            background: #333; 
+            border: 1px solid yellow; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minimal Chart Test</h1>
+        
+        <div class="chart-container">
+            <h3>Test Chart</h3>
+            <div id="test-chart" style="width: 100%; height: 250px;">
+                <div style="text-align: center; padding: 50px; color: #888;">
+                    Loading chart...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script>
+        setTimeout(function() {
+            console.log('Starting minimal test...');
+            
+            // Create a simple test chart
+            const testData = [{
+                x: [1, 2, 3, 4, 5],
+                y: [1, 4, 2, 3, 5],
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#4ECDC4', width: 2 },
+                marker: { size: 8, color: '#4ECDC4' }
+            }];
+            
+            const layout = {
+                title: { text: 'Test Chart', font: { color: '#fff', size: 16 } },
+                xaxis: { color: '#e0e0e0', gridcolor: '#444' },
+                yaxis: { color: '#e0e0e0', gridcolor: '#444' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#e0e0e0', size: 12 },
+                margin: { l: 50, r: 50, t: 50, b: 50 },
+                showlegend: false
+            };
+            
+            console.log('Rendering test chart...');
+            Plotly.newPlot('test-chart', testData, layout, {responsive: true, displayModeBar: false});
+            console.log('Test chart rendered');
+            
+        }, 1000);
+    </script>
+</body>
+</html>

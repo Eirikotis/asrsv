@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+    <title>ASSET Reserve Dashboard</title>
+</head>
+<body>
+    {% if no_data %}
+        <h1>No data yet. Run snapshot.</h1>
+    {% else %}
+        <h1>ASSET Reserve Dashboard</h1>
+        
+        <h2>Key Metrics</h2>
+        <ul>
+            <li>Price USD: ${{ "%.4f"|format(summary.price_usd or 0) }}</li>
+            <li>FDV USD: ${{ "%.2f"|format(summary.fdv_usd or 0) }}</li>
+            <li>Market Cap USD: ${{ "%.2f"|format(summary.market_cap_usd or 0) }}</li>
+            <li>Circulating Supply: {{ "%.2f"|format(summary.circulating_supply or 0) }}</li>
+            <li>Real TVL Total USD: ${{ "%.2f"|format(summary.real_tvl_total_usd or 0) }}</li>
+            <li>Volume 24h USD: ${{ "%.2f"|format(summary.volume_24h_usd or 0) }}</li>
+            {% if summary.fees24h_total_usd_est %}
+            <li>Fees 24h USD: ${{ "%.2f"|format(summary.fees24h_total_usd_est or 0) }}</li>
+            {% endif %}
+        </ul>
+        
+        <h2>Pools</h2>
+        <table border="1">
+            <tr>
+                <th>Family</th>
+                <th>Source</th>
+                <th>Quote Symbol</th>
+                <th>Real TVL USD</th>
+                <th>Volume 24h USD</th>
+                <th>Fee 24h USD</th>
+                <th>Daily Yield</th>
+                <th>APY Simple</th>
+            </tr>
+            {% for pool in pools %}
+            <tr>
+                <td>{{ pool.family }}</td>
+                <td>{{ pool.source }}</td>
+                <td>{{ pool.quote_symbol }}</td>
+                <td>${{ "%.2f"|format(pool.real_tvl_usd or 0) }}</td>
+                <td>${{ "%.2f"|format(pool.volume_24h_usd or 0) }}</td>
+                <td>${{ "%.2f"|format(pool.fee_24h_usd or 0) }}</td>
+                <td>{{ "%.4f"|format(pool.daily_yield or 0) }}</td>
+                <td>{{ "%.2f"|format(pool.apy_simple or 0) }}%</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</body>
+</html>
