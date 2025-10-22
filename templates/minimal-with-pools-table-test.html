@@ -322,15 +322,15 @@
             
             <div class="metric-section">
                 <h3>Yield Metrics</h3>
-                <div class="metric-item" title="30m fees are reconstructed from the 24h rolling series via f_t = S_t - S_{t-1} + f_{t-48} (or k_t when cadence drifts)">
-                    <span class="metric-label">Fees (30m)</span>
-                    <span class="metric-value">${{ "{:,.2f}".format(fees_30m or 0) }}</span>
+                <div class="metric-item" title="8hr fees are calculated as 24h fees divided by 3">
+                    <span class="metric-label">Fees (8hr)</span>
+                    <span class="metric-value">${{ "{:,.2f}".format(fees_8hr or 0) }}</span>
                 </div>
                 <div class="metric-item" title="Latest 24h rolling fee total from all pools">
                     <span class="metric-label">Fees (24h)</span>
                     <span class="metric-value">${{ "{:,.2f}".format(fees_24h or 0) }}</span>
                 </div>
-                <div class="metric-item" title="Cumulative sum of all 30m interval fees over time">
+                <div class="metric-item" title="Cumulative sum of all 8hr interval fees over time">
                     <span class="metric-label">Fees (All-time)</span>
                     <span class="metric-value">${{ "{:,.2f}".format(fees_all_time or 0) }}</span>
                 </div>
