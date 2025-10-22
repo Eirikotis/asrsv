@@ -29,8 +29,8 @@ templates = Jinja2Templates(directory=templates_dir)
 # Ensure migrations at startup
 migrate()
 
-# Start auto-refresh for VPS deployment (30 minute intervals)
-start_auto_refresh(interval_minutes=30)
+# Start auto-refresh for VPS deployment (8 hour intervals)
+start_auto_refresh(interval_minutes=480)
 
 
 def _latest_metrics():
@@ -72,7 +72,7 @@ def _pools_for_ts(ts_utc: str):
 
 
 def _get_fee_metrics():
-	"""Get simple fee metrics: 30m = 24h/48, all-time = sum of all 30m fees"""
+	"""Get simple fee metrics: 8hr = 24h/3, all-time = sum of all 8hr fees"""
 	# Get latest 24h fees
 	latest_24h = q("""
 		SELECT COALESCE(SUM(fee_24h_usd), 0) as total_24h_fees
@@ -81,18 +81,18 @@ def _get_fee_metrics():
 	""")
 	
 	latest_24h_fees = latest_24h[0]['total_24h_fees'] if latest_24h else 0.0
-	fees_30m = latest_24h_fees / 48.0  # Simple: 30m = 24h / 48
+	fees_8hr = latest_24h_fees / 3.0  # Simple: 8hr = 24h / 3
 	
-	# Get all-time fees (sum of all 30m fees)
+	# Get all-time fees (sum of all 8hr fees)
 	all_time = q("""
-		SELECT COALESCE(SUM(fee_24h_usd / 48.0), 0) as all_time_fees
+		SELECT COALESCE(SUM(fee_24h_usd / 3.0), 0) as all_time_fees
 		FROM pool_snapshots
 	""")
 	
 	all_time_fees = all_time[0]['all_time_fees'] if all_time else 0.0
 	
 	return {
-		'latest_30m_fees': fees_30m,
+		'latest_8hr_fees': fees_8hr,
 		'latest_24h_fees': latest_24h_fees,
 		'all_time_fees': all_time_fees
 	}
@@ -132,7 +132,7 @@ async def index(request: Request):
 	if not m:
 		return templates.TemplateResponse(
 			"minimal-with-pools-table-test.html",
-			{"request": request, "summary": None, "pools": [], "fees_30m": 0, "fees_24h": 0, "fees_all_time": 0, "no_data": True},
+			{"request": request, "summary": None, "pools": [], "fees_8hr": 0, "fees_24h": 0, "fees_all_time": 0, "no_data": True},
 		)
 
 	pools = _pools_for_ts(m["ts_utc"]) if m else []
@@ -144,7 +144,7 @@ async def index(request: Request):
 			"request": request, 
 			"summary": m, 
 			"pools": pools, 
-			"fees_30m": fee_metrics['latest_30m_fees'],
+			"fees_8hr": fee_metrics['latest_8hr_fees'],
 			"fees_24h": fee_metrics['latest_24h_fees'],
 			"fees_all_time": fee_metrics['all_time_fees'],
 			"daily_yield": m['real_yield_daily'] if m and 'real_yield_daily' in m else 0,
