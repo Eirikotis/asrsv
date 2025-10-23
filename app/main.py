@@ -98,6 +98,33 @@ def _get_fee_metrics():
 	}
 
 
+def _get_volume_metrics():
+	"""Get volume metrics: 8hr = 24h/3, all-time = sum of all 8hr volumes"""
+	# Get latest 24h volume
+	latest_24h = q("""
+		SELECT COALESCE(SUM(volume_24h_usd), 0) as total_24h_volume
+		FROM pool_snapshots
+		WHERE ts_utc = (SELECT MAX(ts_utc) FROM pool_snapshots)
+	""")
+	
+	latest_24h_volume = latest_24h[0]['total_24h_volume'] if latest_24h else 0.0
+	volume_8hr = latest_24h_volume / 3.0  # Simple: 8hr = 24h / 3
+	
+	# Get all-time volume (sum of all 8hr volumes)
+	all_time = q("""
+		SELECT COALESCE(SUM(volume_24h_usd / 3.0), 0) as all_time_volume
+		FROM pool_snapshots
+	""")
+	
+	all_time_volume = all_time[0]['all_time_volume'] if all_time else 0.0
+	
+	return {
+		'latest_8hr_volume': volume_8hr,
+		'latest_24h_volume': latest_24h_volume,
+		'all_time_volume': all_time_volume
+	}
+
+
 def _history_summaries():
 	# Daily totals from metrics
 	return q(
@@ -132,11 +159,15 @@ async def index(request: Request):
 	if not m:
 		return templates.TemplateResponse(
 			"minimal-with-pools-table-test.html",
-			{"request": request, "summary": None, "pools": [], "fees_8hr": 0, "fees_24h": 0, "fees_all_time": 0, "no_data": True},
+			{"request": request, "summary": None, "pools": [], "fees_8hr": 0, "fees_24h": 0, "fees_all_time": 0, "volume_8hr": 0, "volume_24h": 0, "volume_all_time": 0, "liquidity_deployed": 0, "no_data": True},
 		)
 
 	pools = _pools_for_ts(m["ts_utc"]) if m else []
 	fee_metrics = _get_fee_metrics()
+	volume_metrics = _get_volume_metrics()
+	
+	# Calculate liquidity deployed (market cap + real TVL)
+	liquidity_deployed = (m.get('market_cap_usd', 0) or 0) + (m.get('real_tvl_total_usd', 0) or 0)
 	
 	return templates.TemplateResponse(
 		"minimal-with-pools-table-test.html",
@@ -147,6 +178,10 @@ async def index(request: Request):
 			"fees_8hr": fee_metrics['latest_8hr_fees'],
 			"fees_24h": fee_metrics['latest_24h_fees'],
 			"fees_all_time": fee_metrics['all_time_fees'],
+			"volume_8hr": volume_metrics['latest_8hr_volume'],
+			"volume_24h": volume_metrics['latest_24h_volume'],
+			"volume_all_time": volume_metrics['all_time_volume'],
+			"liquidity_deployed": liquidity_deployed,
 			"daily_yield": m['real_yield_daily'] if m and 'real_yield_daily' in m else 0,
 			"apy_simple": m['apy_simple'] if m and 'apy_simple' in m else 0,
 			"apy_compound": m['apy_compound'] if m and 'apy_compound' in m else 0,
