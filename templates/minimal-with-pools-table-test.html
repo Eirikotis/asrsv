@@ -314,6 +314,10 @@
                     <span class="metric-label">Volume 24h USD</span>
                     <span class="metric-value">${{ "{:,.2f}".format(summary.volume_24h_usd or 0) }}</span>
                 </div>
+                <div class="metric-item" title="Cumulative sum of all 8hr interval volumes over time">
+                    <span class="metric-label">Volume (All-time)</span>
+                    <span class="metric-value">${{ "{:,.2f}".format(volume_all_time or 0) }}</span>
+                </div>
             </div>
             
             <div class="metric-section">
@@ -341,18 +345,6 @@
                 <div class="metric-item">
                     <span class="metric-label">APY Compound</span>
                     <span class="metric-value">{{ "{:.2f}".format(apy_compound * 100) }}%</span>
-                </div>
-                <div class="metric-item" title="8hr volume is calculated as 24h volume divided by 3">
-                    <span class="metric-label">Volume (8hr)</span>
-                    <span class="metric-value">${{ "{:,.2f}".format(volume_8hr or 0) }}</span>
-                </div>
-                <div class="metric-item" title="Latest 24h rolling volume total from all pools">
-                    <span class="metric-label">Volume (24h)</span>
-                    <span class="metric-value">${{ "{:,.2f}".format(volume_24h or 0) }}</span>
-                </div>
-                <div class="metric-item" title="Cumulative sum of all 8hr interval volumes over time">
-                    <span class="metric-label">Volume (All-time)</span>
-                    <span class="metric-value">${{ "{:,.2f}".format(volume_all_time or 0) }}</span>
                 </div>
             </div>
             
