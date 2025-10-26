@@ -180,6 +180,29 @@ class SnapshotLock:
 		self.release()
 
 
+def _get_last_non_zero_value(column: str) -> float:
+	"""Get the last non-zero value for a given column in metrics_snapshots."""
+	conn = _connect()
+	try:
+		cur = conn.cursor()
+		cur.execute(
+			f"""
+			SELECT {column}
+			FROM metrics_snapshots
+			WHERE {column} IS NOT NULL AND {column} > 0
+			ORDER BY ts_utc DESC
+			LIMIT 1
+			"""
+		)
+		row = cur.fetchone()
+		return float(row[0]) if row and row[0] else 0.0
+	except Exception as e:
+		logging.warning(f"Failed to get last non-zero value for {column}: {e}")
+		return 0.0
+	finally:
+		conn.close()
+
+
 def snapshot_once() -> Dict[str, Any]:
 	"""Run a single snapshot, persist into DB, and return the computed summary dict."""
 	migrate()
@@ -196,6 +219,20 @@ def snapshot_once() -> Dict[str, Any]:
 	circulating = max(total_supply - reserve_total, 0.0)
 	fdv = price * total_supply
 	mc  = price * circulating
+	
+	# Replace 0 values with last known good values
+	if price <= 0:
+		price = _get_last_non_zero_value("price_usd")
+		logging.info(f"Price was 0, using last known value: {price}")
+	if circulating <= 0:
+		circulating = _get_last_non_zero_value("circulating_supply")
+		logging.info(f"Circulating supply was 0, using last known value: {circulating}")
+	if fdv <= 0:
+		fdv = _get_last_non_zero_value("fdv_usd")
+		logging.info(f"FDV was 0, using last known value: {fdv}")
+	if mc <= 0:
+		mc = _get_last_non_zero_value("market_cap_usd")
+		logging.info(f"Market cap was 0, using last known value: {mc}")
 
 	items = be_markets_v2(ASSET_MINT, sort_by="liquidity", limit=50, time_frame="24h")
 	rows: List[Dict[str, Any]] = []
@@ -294,6 +331,14 @@ def snapshot_once() -> Dict[str, Any]:
 		total_real_tvl += real_tvl_usd
 		total_vol_24h  += vol_24h
 		total_fees_24h += net_fees_24h
+	
+	# Replace 0 values for aggregated metrics with last known good values
+	if total_real_tvl <= 0:
+		total_real_tvl = _get_last_non_zero_value("real_tvl_total_usd")
+		logging.info(f"Total real TVL was 0, using last known value: {total_real_tvl}")
+	if total_vol_24h <= 0:
+		total_vol_24h = _get_last_non_zero_value("volume_24h_usd")
+		logging.info(f"Total 24h volume was 0, using last known value: {total_vol_24h}")
 
 	ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 	conn = _connect()
